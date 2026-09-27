@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Upload,
   Download,
@@ -11,7 +11,6 @@ import {
   ZoomIn,
   ZoomOut,
   Layers,
-  Image as ImageIcon,
   Check,
 } from 'lucide-react';
 import JSZip from 'jszip';
@@ -19,16 +18,25 @@ import {
   ProcessedImageItem,
   ImageProcessOptions,
   removeBackgroundFromImage,
-  generateStudioTestImage,
 } from '../utils/imageProcessor';
 
 interface BatchImageStudioProps {
-  onImagesUpdated?: (images: ProcessedImageItem[]) => void;
+  items: ProcessedImageItem[];
+  setItems: React.Dispatch<React.SetStateAction<ProcessedImageItem[]>>;
+  selectedId: string | null;
+  setSelectedId: (id: string | null) => void;
+  onFileUpload: (files: FileList | null) => void;
+  onLoadSample: () => void;
 }
 
-export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpdated }) => {
-  const [items, setItems] = useState<ProcessedImageItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({
+  items,
+  setItems,
+  selectedId,
+  setSelectedId,
+  onFileUpload,
+  onLoadSample,
+}) => {
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
 
@@ -50,60 +58,6 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
 
   const selectedItem = items.find((i) => i.id === selectedId) || items[0] || null;
-
-  useEffect(() => {
-    if (onImagesUpdated) {
-      onImagesUpdated(items);
-    }
-  }, [items, onImagesUpdated]);
-
-  const handleFileUpload = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('image/')) return;
-
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.src = url;
-      img.onload = () => {
-        const item: ProcessedImageItem = {
-          id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          name: file.name,
-          originalUrl: url,
-          originalSize: file.size,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-          status: 'idle',
-        };
-
-        setItems((prev) => {
-          const next = [...prev, item];
-          if (!selectedId) setSelectedId(item.id);
-          return next;
-        });
-      };
-    });
-  };
-
-  const handleLoadSampleCanvas = async () => {
-    const { url, file } = await generateStudioTestImage();
-    const img = new Image();
-    img.src = url;
-    img.onload = () => {
-      const item: ProcessedImageItem = {
-        id: `sample-test-${Date.now()}`,
-        name: 'studio-product-sample.jpg',
-        originalUrl: url,
-        originalSize: file.size,
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        status: 'idle',
-      };
-      setItems((prev) => [...prev, item]);
-      setSelectedId(item.id);
-    };
-  };
 
   const processSingleItem = async (item: ProcessedImageItem): Promise<ProcessedImageItem> => {
     return new Promise((resolve) => {
@@ -231,7 +185,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Image Processing</span>
+            <span>Studio Workspace</span>
             <span aria-hidden="true">·</span>
             <span>Batch Engine</span>
             <span aria-hidden="true">·</span>
@@ -247,7 +201,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
 
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handleLoadSampleCanvas}
+            onClick={onLoadSample}
             className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5 border border-slate-200/60"
           >
             <Layers className="w-3.5 h-3.5 text-slate-500" />
@@ -266,7 +220,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
             multiple
             accept="image/*"
             className="hidden"
-            onChange={(e) => handleFileUpload(e.target.files)}
+            onChange={(e) => onFileUpload(e.target.files)}
           />
         </div>
       </div>
@@ -277,7 +231,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
-            handleFileUpload(e.dataTransfer.files);
+            onFileUpload(e.dataTransfer.files);
           }}
           className="border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center bg-white hover:bg-slate-50/50 transition-colors shadow-xs"
         >
@@ -299,7 +253,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                 Browse Image Files
               </button>
               <button
-                onClick={handleLoadSampleCanvas}
+                onClick={onLoadSample}
                 className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
               >
                 Load Studio Test Canvas
@@ -319,7 +273,10 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                   Batch Queue ({items.length})
                 </div>
                 <button
-                  onClick={() => setItems([])}
+                  onClick={() => {
+                    setItems([]);
+                    setSelectedId(null);
+                  }}
                   className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors"
                 >
                   Clear All
