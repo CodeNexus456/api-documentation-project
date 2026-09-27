@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Documentation — Client Application API</title>
+  <meta name="description" content="Clean, developer-friendly API reference documentation and OpenAPI specification.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-elevated: #1f2937;
+      --border: #374151;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --code-bg: #080c14;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 16px;
+      flex-shrink: 0;
+    }
+    .brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-tag {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .sidebar-desc {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+    .nav-group-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      font-weight: 700;
+      margin: 16px 0 8px 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: var(--surface-elevated);
+      color: var(--text);
+    }
+    .nav-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .badge-post { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .badge-get { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    
+    /* Main Content */
+    .main {
+      flex: 1;
+      max-width: 1040px;
+      padding: 40px 48px 100px;
+      overflow-y: auto;
+    }
+    .header-bar {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 28px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .lead {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 650px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover {
+      background: #2d3748;
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    p {
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 0.875rem;
+    }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: var(--text);
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      background: rgba(255,255,255,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #93c5fd;
+    }
+    .required {
+      color: #f87171;
+      font-weight: 600;
+    }
+    .optional {
+      color: var(--text-dim);
+    }
+
+    /* Endpoint Card */
+    .endpoint-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 24px;
+    }
+    .endpoint-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(255,255,255,0.015);
+    }
+    .endpoint-title-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .method-post { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .method-get { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .endpoint-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .endpoint-body {
+      padding: 24px 20px;
+    }
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 16px;
+    }
+    @media (max-width: 900px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: static; }
+      .main { padding: 24px; }
+      .spec-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Code Blocks */
+    .code-container {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .code-header {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .copy-btn:hover {
+      color: var(--text);
+    }
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      padding: 14px 16px;
+      overflow-x: auto;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+    .code-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 6px 12px 0;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .code-tab {
+      background: transparent;
+      border: none;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+    }
+    .code-tab.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      Client API Docs
+      <span class="brand-tag">v1.0.0</span>
+    </div>
+    <p class="sidebar-desc">Official integration specification & guide.</p>
+
+    <div class="nav-group-title">Getting Started</div>
+    <a href="#overview" class="nav-item">Overview</a>
+    <a href="#authentication" class="nav-item">Authentication</a>
+    <a href="#status-codes" class="nav-item">Status Codes & Errors</a>
+
+    <div class="nav-group-title">Authentication API</div>
+    <a href="#post-login" class="nav-item active">
+      <span class="nav-badge badge-post">POST</span>
+      /api/login
+    </a>
+
+    <div class="nav-group-title">Resources</div>
+    <a href="./openapi.yaml" download="openapi.yaml" class="nav-item">Download openapi.yaml</a>
+    <a href="./api.md" target="_blank" class="nav-item">View api.md</a>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="header-bar">
+      <div>
+        <h1>Client Application API</h1>
+        <p class="lead">Complete reference documentation for integrating client applications, handling authentication, and interacting with endpoints.</p>
+      </div>
+      <div>
+        <a href="./openapi.yaml" download="openapi.yaml" class="btn btn-primary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+          Export OpenAPI YAML
+        </a>
+      </div>
+    </div>
+
+    <!-- Overview -->
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>The Client Application API is organized around standard REST principles. All requests require valid JSON payloads with appropriate HTTP headers, and will return predictable JSON responses accompanied by standard HTTP status codes.</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Environment</th>
+            <th>Base URL</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Production</strong></td>
+            <td><code>https://api.example.com</code></td>
+            <td>Live</td>
+          </tr>
+          <tr>
+            <td><strong>Staging</strong></td>
+            <td><code>https://staging-api.example.com</code></td>
+            <td>Active</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Authentication -->
+    <section id="authentication">
+      <h2>Authentication</h2>
+      <p>To access protected resources, clients must include the Bearer token returned by the authentication endpoint in the <code>Authorization</code> request header:</p>
+      
+      <div class="code-container">
+        <div class="code-header">
+          <span>HTTP Header</span>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('Authorization: Bearer <your_jwt_token>')">Copy</button>
+        </div>
+        <pre><code>Authorization: Bearer &lt;your_jwt_token&gt;</code></pre>
+      </div>
+      <p>Tokens remain valid for 24 hours from creation.</p>
+    </section>
+
+    <!-- Status Codes -->
+    <section id="status-codes">
+      <h2>HTTP Status Codes & Error Handling</h2>
+      <p>Every response includes an HTTP status code indicating the outcome of the request:</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Status Code</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>200 OK</code></td>
+            <td>Success</td>
+            <td>Request succeeded as expected.</td>
+          </tr>
+          <tr>
+            <td><code>400 Bad Request</code></td>
+            <td>Client Error</td>
+            <td>Required parameters are missing, or payload formatting is invalid.</td>
+          </tr>
+          <tr>
+            <td><code>401 Unauthorized</code></td>
+            <td>Client Error</td>
+            <td>Authentication failed or authorization token is invalid/expired.</td>
+          </tr>
+          <tr>
+            <td><code>403 Forbidden</code></td>
+            <td>Client Error</td>
+            <td>The client does not have permissions to access the requested resource.</td>
+          </tr>
+          <tr>
+            <td><code>404 Not Found</code></td>
+            <td>Client Error</td>
+            <td>The requested resource does not exist.</td>
+          </tr>
+          <tr>
+            <td><code>500 Server Error</code></td>
+            <td>Server Error</td>
+            <td>An unexpected error occurred while processing the request.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Endpoint: POST /api/login -->
+    <section id="post-login">
+      <h2>Authentication Endpoints</h2>
+      
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <div class="endpoint-title-lockup">
+            <span class="method method-post">POST</span>
+            <span class="endpoint-path">/api/login</span>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-dim);">Public Endpoint</span>
+        </div>
+
+        <div class="endpoint-body">
+          <p><strong>Description:</strong> Authenticate an existing user with email and password credentials to receive a session token.</p>
+
+          <h3 style="font-size: 0.95rem; margin: 18px 0 8px;">Request Headers</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Header</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Content-Type</code></td>
+                <td>string</td>
+                <td><span class="required">Yes</span></td>
+                <td>Must be <code>application/json</code></td>
+              </tr>
+              <tr>
+                <td><code>Accept</code></td>
+                <td>string</td>
+                <td><span class="optional">Optional</span></td>
+                <td>Recommended <code>application/json</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style="font-size: 0.95rem; margin: 18px 0 8px;">Request Body Parameters</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>email</code></td>
+                <td>string</td>
+                <td><span class="required">Yes</span></td>
+                <td>Registered user email</td>
+                <td><code>user@example.com</code></td>
+              </tr>
+              <tr>
+                <td><code>password</code></td>
+                <td>string</td>
+                <td><span class="required">Yes</span></td>
+                <td>Account password</td>
+                <td><code>password</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Two-column Spec Grid: Request & Response -->
+          <div class="spec-grid">
+            <div>
+              <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Request Payload</h3>
+              <div class="code-container">
+                <div class="code-header">
+                  <span>application/json</span>
+                  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('code-req').innerText)">Copy</button>
+                </div>
+                <pre id="code-req"><code>{
+  "email": "user@example.com",
+  "password": "password"
+}</code></pre>
+              </div>
+
+              <h3 style="font-size: 0.95rem; margin: 18px 0 8px;">Example cURL</h3>
+              <div class="code-container">
+                <div class="code-header">
+                  <span>cURL</span>
+                  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('code-curl').innerText)">Copy</button>
+                </div>
+                <pre id="code-curl"><code>curl -X POST https://api.example.com/api/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password"
+  }'</code></pre>
+              </div>
+            </div>
+
+            <div>
+              <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Success Response <span style="color: #34d399; font-size: 0.8rem; font-weight: normal;">(200 OK)</span></h3>
+              <div class="code-container">
+                <div class="code-header">
+                  <span>200 OK</span>
+                  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('code-res-200').innerText)">Copy</button>
+                </div>
+                <pre id="code-res-200"><code>{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}</code></pre>
+              </div>
+
+              <h3 style="font-size: 0.95rem; margin: 18px 0 8px;">Error Response <span style="color: #f87171; font-size: 0.8rem; font-weight: normal;">(401 Unauthorized)</span></h3>
+              <div class="code-container">
+                <div class="code-header">
+                  <span>401 Unauthorized</span>
+                  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('code-res-401').innerText)">Copy</button>
+                </div>
+                <pre id="code-res-401"><code>{
+  "success": false,
+  "message": "Invalid credentials"
+}</code></pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

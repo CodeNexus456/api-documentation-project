@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: Client Application API
+  version: 1.0.0
+  description: >-
+    Developer API documentation and specification. This document outlines available
+    endpoints, authentication mechanisms, request payloads, and standard response formats.
+servers:
+  - url: https://api.example.com
+    description: Production Server
+  - url: https://staging-api.example.com
+    description: Staging Server
+paths:
+  /api/login:
+    post:
+      summary: Authenticate an existing user
+      description: Authenticate an existing user using their email and password credentials to obtain an authorization token.
+      operationId: loginUser
+      tags:
+        - Authentication
+      requestBody:
+        description: User credentials for authentication
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Registered user email address
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  description: Account password
+                  example: password
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - token
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    description: JWT or Bearer access token for authenticated requests
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+              example:
+                success: true
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsZXggRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        '400':
+          description: Bad request - Missing or invalid fields
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Email and password are required
+        '401':
+          description: Authentication failed - Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid credentials
+              example:
+                success: false
+                message: Invalid credentials
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: An unexpected server error occurred
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter the Bearer token returned from the /api/login endpoint.

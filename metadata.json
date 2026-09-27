@@ -1,0 +1,6 @@
+{
+  "name": "API Documentation & Batch Image Studio",
+  "description": "Professional API documentation suite with OpenAPI 3.0 specification, interactive endpoint explorer, and batch image background removal studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
