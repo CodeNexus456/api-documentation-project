@@ -4,15 +4,15 @@ import {
   Download,
   Trash2,
   Sliders,
-  CheckCircle,
-  AlertCircle,
-  Eye,
+  CheckCircle2,
   RefreshCw,
   Sparkles,
   Maximize2,
   ZoomIn,
   ZoomOut,
   Layers,
+  Image as ImageIcon,
+  Check,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import {
@@ -32,9 +32,9 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
 
-  // Studio inspection controls
+  // Viewport & inspection state
   const [previewBg, setPreviewBg] = useState<'checker' | 'dark' | 'white' | 'green'>('checker');
-  const [compareMode, setCompareMode] = useState<'split' | 'side' | 'edited'>('split');
+  const [viewMode, setViewMode] = useState<'split' | 'side' | 'edited'>('split');
   const [sliderPosition, setSliderPosition] = useState(50);
   const [zoomLevel, setZoomLevel] = useState(1);
 
@@ -51,7 +51,6 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
 
   const selectedItem = items.find((i) => i.id === selectedId) || items[0] || null;
 
-  // Sync to parent if needed
   useEffect(() => {
     if (onImagesUpdated) {
       onImagesUpdated(items);
@@ -60,8 +59,6 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
 
   const handleFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-
-    const newItems: ProcessedImageItem[] = [];
 
     Array.from(files).forEach((file) => {
       if (!file.type.startsWith('image/')) return;
@@ -96,7 +93,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
     img.onload = () => {
       const item: ProcessedImageItem = {
         id: `sample-test-${Date.now()}`,
-        name: 'client-sample-product.jpg',
+        name: 'studio-product-sample.jpg',
         originalUrl: url,
         originalSize: file.size,
         width: img.naturalWidth,
@@ -155,13 +152,10 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
     if (items.length === 0) return;
     setIsProcessingBatch(true);
 
-    // Set all to processing
     setItems((prev) => prev.map((i) => ({ ...i, status: 'processing' })));
 
-    const processedList: ProcessedImageItem[] = [];
     for (const item of items) {
       const result = await processSingleItem(item);
-      processedList.push(result);
       setItems((prev) => prev.map((i) => (i.id === result.id ? result : i)));
     }
 
@@ -184,24 +178,10 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
     setIsZipping(true);
     try {
       const zip = new JSZip();
-      const editedFolder = zip.folder('edited');
-      const originalFolder = zip.folder('original');
-
       for (const item of readyItems) {
         const baseName = item.name.replace(/\.[^/.]+$/, '');
-        if (item.editedBlob && editedFolder) {
-          editedFolder.file(`${baseName}-transparent.png`, item.editedBlob);
-        }
-
-        // Fetch original blob
-        if (originalFolder) {
-          try {
-            const res = await fetch(item.originalUrl);
-            const blob = await res.blob();
-            originalFolder.file(item.name, blob);
-          } catch {
-            // ignore
-          }
+        if (item.editedBlob) {
+          zip.file(`${baseName}-transparent.png`, item.editedBlob);
         }
       }
 
@@ -209,7 +189,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'client-edited-images-batch.zip';
+      a.download = 'edited-transparent-pngs.zip';
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -219,17 +199,9 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
 
   const handleDeleteItem = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
-    if (selectedId === id) {
-      setSelectedId(null);
-    }
+    if (selectedId === id) setSelectedId(null);
   };
 
-  const handleClearAll = () => {
-    setItems([]);
-    setSelectedId(null);
-  };
-
-  // Split slider drag handling
   const handleSliderMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDraggingSlider || !splitContainerRef.current) return;
     const rect = splitContainerRef.current.getBoundingClientRect();
@@ -243,7 +215,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
       case 'checker':
         return 'bg-[linear-gradient(45deg,#e2e8f0_25%,transparent_25%),linear-gradient(-45deg,#e2e8f0_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e2e8f0_75%),linear-gradient(-45deg,transparent_75%,#e2e8f0_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0] bg-slate-100';
       case 'dark':
-        return 'bg-slate-900';
+        return 'bg-slate-950';
       case 'white':
         return 'bg-white';
       case 'green':
@@ -255,18 +227,18 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Studio Header & Requirements Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      {/* Studio Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Client Workspace</span>
+            <span>Image Processing</span>
             <span aria-hidden="true">·</span>
-            <span>Batch Background Removal</span>
+            <span>Batch Engine</span>
             <span aria-hidden="true">·</span>
-            <span>Edge Defringing Pipeline</span>
+            <span>Anti-Fringe Halo Elimination</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Batch Image Background Removal Studio
+            Batch Image Background Removal
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
             Preserves 100% native resolution, retains subject integrity, and enforces anti-fringing halo suppression to eliminate white edge halos on web backdrops.
@@ -276,17 +248,17 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleLoadSampleCanvas}
-            className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5"
+            className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1.5 border border-slate-200/60"
           >
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5 text-slate-500" />
             <span>Load Test Canvas</span>
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>Upload Client Batch</span>
+            <span>Upload Batch Images</span>
           </button>
           <input
             ref={fileInputRef}
@@ -299,7 +271,6 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
       {items.length === 0 ? (
         /* Empty State Dropzone */
         <div
@@ -308,16 +279,16 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
             e.preventDefault();
             handleFileUpload(e.dataTransfer.files);
           }}
-          className="border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center bg-slate-50/50 hover:bg-slate-50 transition-colors"
+          className="border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center bg-white hover:bg-slate-50/50 transition-colors shadow-xs"
         >
           <div className="max-w-md mx-auto space-y-4">
-            <div className="w-14 h-14 bg-white border border-slate-200 shadow-xs rounded-xl flex items-center justify-center mx-auto text-blue-600">
-              <Upload className="w-7 h-7" />
+            <div className="w-14 h-14 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto text-slate-800 shadow-xs">
+              <Upload className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">Upload Your Batch of Images</h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Drag and drop your batch here or select files from your computer. PNG, JPEG, WEBP supported.
+                Drag and drop your batch here or browse from your device. PNG, JPEG, WEBP supported.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -329,7 +300,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
               </button>
               <button
                 onClick={handleLoadSampleCanvas}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
               >
                 Load Studio Test Canvas
               </button>
@@ -337,35 +308,33 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
           </div>
         </div>
       ) : (
-        /* Populated Studio */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Image Queue & Batch Actions (4 cols) */}
+        /* Populated Studio Layout */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Batch Queue & Refinement Controls (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-              <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-200">
+            {/* Batch List */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/80">
                 <div className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Batch Queue ({items.length})
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleClearAll}
-                    className="text-[11px] text-slate-500 hover:text-rose-600 font-medium"
-                  >
-                    Clear All
-                  </button>
-                </div>
+                <button
+                  onClick={() => setItems([])}
+                  className="text-[11px] text-slate-400 hover:text-rose-600 transition-colors"
+                >
+                  Clear All
+                </button>
               </div>
 
-              {/* Items List */}
-              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                 {items.map((item) => (
                   <div
                     key={item.id}
                     onClick={() => setSelectedId(item.id)}
-                    className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between gap-3 transition-colors ${
+                    className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between gap-3 transition-all ${
                       selectedItem?.id === item.id
-                        ? 'border-blue-500 bg-blue-50/50 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-blue-500 bg-blue-50/40 shadow-xs'
+                        : 'border-slate-200/80 bg-white hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -376,8 +345,10 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                       />
                       <div className="min-w-0">
                         <div className="font-semibold text-slate-800 truncate">{item.name}</div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
-                          <span>{item.width}×{item.height}px</span>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                          <span>
+                            {item.width}×{item.height}px
+                          </span>
                           <span>·</span>
                           <span>{(item.originalSize / 1024).toFixed(0)} KB</span>
                         </div>
@@ -386,26 +357,17 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
 
                     <div className="flex items-center gap-2 shrink-0">
                       {item.status === 'done' && (
-                        <span className="text-emerald-600" title="Completed">
-                          <CheckCircle className="w-4 h-4" />
-                        </span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       )}
                       {item.status === 'processing' && (
-                        <span className="text-blue-600 animate-spin" title="Processing">
-                          <RefreshCw className="w-4 h-4" />
-                        </span>
-                      )}
-                      {item.status === 'error' && (
-                        <span className="text-rose-600" title={item.errorMessage || 'Error'}>
-                          <AlertCircle className="w-4 h-4" />
-                        </span>
+                        <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
                       )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteItem(item.id);
                         }}
-                        className="text-slate-400 hover:text-rose-600 p-1"
+                        className="text-slate-400 hover:text-rose-600 p-1 rounded"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -414,12 +376,12 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                 ))}
               </div>
 
-              {/* Batch Actions Bar */}
-              <div className="pt-4 border-t border-slate-200 mt-4 space-y-2">
+              {/* Action buttons */}
+              <div className="pt-4 border-t border-slate-200/80 mt-4 space-y-2">
                 <button
                   onClick={handleProcessAllBatch}
                   disabled={isProcessingBatch}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-60 shadow-xs"
                 >
                   {isProcessingBatch ? (
                     <>
@@ -428,8 +390,8 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Process All Images</span>
+                      <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Process All Batch</span>
                     </>
                   )}
                 </button>
@@ -437,7 +399,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                 <button
                   onClick={handleDownloadBatchZip}
                   disabled={isZipping || !items.some((i) => i.editedBlob)}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200/60 disabled:opacity-50"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>{isZipping ? 'Archiving ZIP...' : 'Download Edited Batch (ZIP)'}</span>
@@ -445,16 +407,14 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
               </div>
             </div>
 
-            {/* Quality & Defringe Controls */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-blue-600" />
-                  Algorithm Parameters
-                </div>
+            {/* Algorithm refinement controls */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs space-y-4">
+              <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-200/80">
+                <Sliders className="w-3.5 h-3.5 text-blue-600" />
+                <span>Refinement Parameters</span>
               </div>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3.5 text-xs">
                 {/* Defringe Halo Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -470,14 +430,14 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                     className="w-full accent-blue-600"
                   />
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Eliminates the bright white border around subject silhouettes.
+                    Decontaminates white backdrop color from edge pixels to prevent halos.
                   </p>
                 </div>
 
                 {/* Tolerance Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-semibold text-slate-700">Background Color Tolerance</label>
+                    <label className="font-semibold text-slate-700">Color Tolerance</label>
                     <span className="font-mono text-slate-500">{options.tolerance}</span>
                   </div>
                   <input
@@ -493,7 +453,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                 {/* Feather Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-semibold text-slate-700">Edge Feather & Smoothing</label>
+                    <label className="font-semibold text-slate-700">Edge Feathering</label>
                     <span className="font-mono text-slate-500">{options.feather}px</span>
                   </div>
                   <input
@@ -511,7 +471,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
               <button
                 onClick={handleProcessSelected}
                 disabled={!selectedItem || selectedItem.status === 'processing'}
-                className="w-full py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition-colors"
+                className="w-full py-2 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition-colors"
               >
                 Apply Parameters & Re-Process
               </button>
@@ -521,65 +481,65 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
           {/* Right Column: Viewport & Inspection Stage (8 cols) */}
           <div className="lg:col-span-8 space-y-4">
             {selectedItem && (
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+              <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-xs">
                 {/* Viewport Toolbar */}
-                <div className="p-3 sm:px-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 text-xs">
-                  {/* View mode toggle */}
-                  <div className="flex items-center gap-1 bg-slate-200 p-0.5 rounded-md">
+                <div className="p-3 sm:px-4 border-b border-slate-200/80 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  {/* View Mode Switcher */}
+                  <div className="flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-lg border border-slate-200/60">
                     <button
-                      onClick={() => setCompareMode('split')}
-                      className={`px-2.5 py-1 rounded font-medium ${
-                        compareMode === 'split' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                      onClick={() => setViewMode('split')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                        viewMode === 'split' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                       }`}
                     >
                       Split Slider
                     </button>
                     <button
-                      onClick={() => setCompareMode('side')}
-                      className={`px-2.5 py-1 rounded font-medium ${
-                        compareMode === 'side' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                      onClick={() => setViewMode('side')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                        viewMode === 'side' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                       }`}
                     >
                       Side by Side
                     </button>
                     <button
-                      onClick={() => setCompareMode('edited')}
-                      className={`px-2.5 py-1 rounded font-medium ${
-                        compareMode === 'edited' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                      onClick={() => setViewMode('edited')}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                        viewMode === 'edited' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
                       }`}
                     >
                       Edited Result
                     </button>
                   </div>
 
-                  {/* Backdrop Selector for Fringing Inspection */}
+                  {/* Backdrop Selector for Halo/Fringing Inspection */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-slate-500 font-medium">Backdrop Check:</span>
+                    <span className="text-[11px] text-slate-500 font-medium">Backdrop:</span>
                     <button
                       onClick={() => setPreviewBg('checker')}
                       title="Checkerboard (Alpha Transparency)"
-                      className={`w-6 h-6 rounded border ${
+                      className={`w-6 h-6 rounded-md border ${
                         previewBg === 'checker' ? 'ring-2 ring-blue-500 border-white' : 'border-slate-300'
                       } bg-[size:6px_6px] bg-[linear-gradient(45deg,#ccc_25%,transparent_25%),linear-gradient(-45deg,#ccc_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#ccc_75%),linear-gradient(-45deg,transparent_75%,#ccc_75%)] bg-slate-100`}
                     />
                     <button
                       onClick={() => setPreviewBg('dark')}
-                      title="Dark Slate (Catch White Halos / Fringing)"
-                      className={`w-6 h-6 rounded border bg-slate-900 ${
+                      title="Dark Slate (Catch White Fringing/Halos)"
+                      className={`w-6 h-6 rounded-md border bg-slate-950 ${
                         previewBg === 'dark' ? 'ring-2 ring-blue-500 border-white' : 'border-slate-300'
                       }`}
                     />
                     <button
                       onClick={() => setPreviewBg('white')}
                       title="Pure White"
-                      className={`w-6 h-6 rounded border bg-white ${
+                      className={`w-6 h-6 rounded-md border bg-white ${
                         previewBg === 'white' ? 'ring-2 ring-blue-500 border-slate-400' : 'border-slate-300'
                       }`}
                     />
                     <button
                       onClick={() => setPreviewBg('green')}
-                      title="Neon Green (Chroma Edge Inspection)"
-                      className={`w-6 h-6 rounded border bg-[#00ff00] ${
+                      title="Neon Green (Chroma Edge Check)"
+                      className={`w-6 h-6 rounded-md border bg-[#00ff00] ${
                         previewBg === 'green' ? 'ring-2 ring-blue-500 border-white' : 'border-slate-300'
                       }`}
                     />
@@ -589,7 +549,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
-                      className="p-1 text-slate-600 hover:text-slate-900 rounded hover:bg-slate-200"
+                      className="p-1 text-slate-600 hover:text-slate-900 rounded"
                     >
                       <ZoomOut className="w-3.5 h-3.5" />
                     </button>
@@ -598,13 +558,13 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                     </span>
                     <button
                       onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.25))}
-                      className="p-1 text-slate-600 hover:text-slate-900 rounded hover:bg-slate-200"
+                      className="p-1 text-slate-600 hover:text-slate-900 rounded"
                     >
                       <ZoomIn className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setZoomLevel(1)}
-                      className="p-1 text-slate-600 hover:text-slate-900 rounded hover:bg-slate-200 ml-1"
+                      className="p-1 text-slate-600 hover:text-slate-900 rounded ml-1"
                       title="Reset 100%"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -612,7 +572,7 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                   </div>
                 </div>
 
-                {/* Inspection Viewport */}
+                {/* Viewport Canvas */}
                 <div
                   ref={splitContainerRef}
                   onMouseMove={handleSliderMouseMove}
@@ -620,8 +580,8 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                   onMouseLeave={() => setIsDraggingSlider(false)}
                   className={`relative w-full h-[460px] overflow-hidden select-none flex items-center justify-center ${getBackdropClass()}`}
                 >
-                  {compareMode === 'split' ? (
-                    /* Interactive Split Before/After Slider */
+                  {viewMode === 'split' ? (
+                    /* Interactive Split Before / After Slider */
                     <div
                       className="relative max-w-full max-h-full"
                       style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.15s ease-out' }}
@@ -649,26 +609,25 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                         />
                       </div>
 
-                      {/* Split Divider Handle */}
+                      {/* Slider Handle */}
                       <div
                         onMouseDown={() => setIsDraggingSlider(true)}
-                        className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize z-20 shadow-md"
+                        className="absolute top-0 bottom-0 w-0.5 bg-white cursor-ew-resize z-20 shadow-lg"
                         style={{ left: `${sliderPosition}%` }}
                       >
-                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white shadow-lg border border-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-700">
+                        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-white shadow-xl border border-slate-300 flex items-center justify-center text-xs font-bold text-slate-700">
                           ↔
                         </div>
                       </div>
 
-                      <div className="absolute bottom-2 left-2 z-10 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
+                      <div className="absolute bottom-2 left-2 z-10 bg-slate-950/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
                         Original
                       </div>
-                      <div className="absolute bottom-2 right-2 z-10 bg-slate-900/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
+                      <div className="absolute bottom-2 right-2 z-10 bg-slate-950/80 text-white text-[10px] px-2 py-0.5 rounded font-mono">
                         Background Removed
                       </div>
                     </div>
-                  ) : compareMode === 'side' ? (
-                    /* Side by side layout */
+                  ) : viewMode === 'side' ? (
                     <div className="grid grid-cols-2 gap-4 p-4 w-full h-full items-center justify-center">
                       <div className="flex flex-col items-center">
                         <div className="text-[11px] text-slate-500 font-mono mb-1">Original</div>
@@ -688,7 +647,6 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                       </div>
                     </div>
                   ) : (
-                    /* Full Edited view */
                     <div
                       style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.15s ease-out' }}
                     >
@@ -702,12 +660,12 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                 </div>
 
                 {/* Viewport Footer Bar */}
-                <div className="p-4 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="p-4 bg-white border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-slate-900">{selectedItem.name}</span>
                     <span className="text-slate-400">·</span>
                     <span className="text-slate-600 font-mono">
-                      Native Resolution: {selectedItem.width} × {selectedItem.height} px (100% preserved)
+                      {selectedItem.width} × {selectedItem.height} px (100% native resolution)
                     </span>
                   </div>
 
@@ -715,14 +673,14 @@ export const BatchImageStudio: React.FC<BatchImageStudioProps> = ({ onImagesUpda
                     <button
                       onClick={handleProcessSelected}
                       disabled={selectedItem.status === 'processing'}
-                      className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200/60"
                     >
                       {selectedItem.status === 'processing' ? 'Processing...' : 'Re-Process Subject'}
                     </button>
                     <button
                       onClick={() => handleDownloadSingle(selectedItem)}
                       disabled={!selectedItem.editedUrl}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center gap-1 disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Download PNG</span>
